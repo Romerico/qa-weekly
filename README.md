@@ -1,1 +1,1 @@
-# QA Weekly
+# Documenting practicing sessions using various techniques
