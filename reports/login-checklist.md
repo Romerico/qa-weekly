@@ -52,17 +52,12 @@ Actual: Form lets user register, no ownership check
 
 Section: Recovery Form
 
-TC-REC-01 — XSS payloads
-Payloads: <script>, "><script>, onerror=alert(1)
+TC-REC-01 — payloads
+Payloads: <script>, "><script>, onerror=alert(1), ' OR '1'='1, UNION SELECT *
 Field: Email
 Expected: All blocked
 Actual: Validation worked — special characters not accepted
 
-TC-REC-02 — SQL injection payloads
-Payloads: ' OR '1'='1, UNION SELECT *
-Field: Email
-Expected: Blocked
-Actual: Everything blocked by frontend validation
 
 Summary
 
