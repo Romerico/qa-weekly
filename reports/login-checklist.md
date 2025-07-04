@@ -1,28 +1,82 @@
-This checklist summarizes manual testing performed on the login and registration forms of the test website. The focus was on validating input fields, testing for SQL injections, and verifying basic security controls without formal documentation.
+Manual Injection Testing — Login, Registration and Recovery
 
-Checklist
-1. Login form accepts only valid email formats (must include '@' and domain)
-Verified: special characters and invalid formats are blocked by frontend validation popup.
+Scope:
+Login, registration and password recovery forms
+Techniques: SQL Injection, malformed inputs, format validation
+Goal: Check if bypass is possible, detect bad validation, injection vulnerabilities
 
-2. Registration form enforces email pattern %@%.com
-Verified: emails not matching pattern are rejected; password field accepts any input.
+Section: Login Form
 
-3. Password field tested with 5 different SQL injection payloads for an existing user
-Verified: all injection attempts were rejected; login did not bypass authentication.
+TC-LOGIN-01 — Email format enforcement
+Input: admin, <>, !@#, and similar
+Field: Email
+Expected: Only emails like something@something.com are accepted
+Actual: All invalid formats blocked, frontend showed popup
 
-4. SQL injection attempts in email field (including attempts with valid email patterns)
-Verified: injections failed due to frontend validation and backend protections.
+TC-LOGIN-02 — Weak password check
+Input: qwe, 123456, password, one-letter strings
+Field: Password
+Expected: Should be flagged or rejected
+Actual: Form accepts any password, backend does the real check
 
-5. Weak passwords and random emails tested for login
-Verified: login correctly rejects invalid credentials without bypass.
+TC-LOGIN-03 — SQL injection in password
+Payloads: ' OR '1'='1, '--, UNION SELECT NULL, admin' --
+Field: Password, with real email
+Expected: Should block login
+Actual: No bypass happened, looks like input is sanitized or prepared statements are used
 
-Conclusion
-Frontend validation enforces strict email formatting, preventing malformed input at the client side.
+TC-LOGIN-04 — SQL injection in email
+Payloads: ' OR '1'='1@x.com, admin' --@test.com
+Field: Email
+Expected: Rejected by frontend
+Actual: All failed — frontend enforces strict pattern for emails
 
-Backend protections (likely prepared statements or parameterized queries) prevent SQL injection attacks on password field.
+Section: Registration Form
 
-No security flaws related to SQL injection were found during this testing phase.
+TC-REG-01 — Email format
+Input: admin, admin@, @example.com, abc@x
+Field: Email
+Expected: Only emails like name@domain.com accepted
+Actual: All invalid emails blocked on frontend
 
-Further testing is recommended for other attack vectors such as XSS and authentication bypasses in registration or other forms.
+TC-REG-02 — XSS in password field
+Input: <script>alert(1)</script>
+Field: Password
+Expected: Rejected or cleaned
+Actual: Just treated as plain text, no execution
 
+TC-REG-03 — Fake data with valid pattern
+Input: huiduha@huiduha.com and 123456
+Expected: Accept if no backend email validation
+Actual: Form lets user register, no ownership check
 
+Section: Recovery Form
+
+TC-REC-01 — XSS payloads
+Payloads: <script>, "><script>, onerror=alert(1)
+Field: Email
+Expected: All blocked
+Actual: Validation worked — special characters not accepted
+
+TC-REC-02 — SQL injection payloads
+Payloads: ' OR '1'='1, UNION SELECT *
+Field: Email
+Expected: Blocked
+Actual: Everything blocked by frontend validation
+
+Summary
+
+Email format check: works fine, strict on client side
+Password: weak passwords go through, backend checks real match
+SQL injection in email: blocked by frontend
+SQL injection in password: failed, looks protected
+Script in password: harmless, just text
+Registration with fake data: works, no email verification
+Recovery form: filters all bad input, only valid emails allowed
+
+Recommendations
+
+Backend should repeat email format check, not rely only on frontend
+Better password rules: length, symbols, banned words
+Email verification needed during registration
+Log brute-force or repeated payload attempts
